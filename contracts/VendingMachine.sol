@@ -2,65 +2,100 @@
 
 pragma solidity ^0.8.11;
 
+/**
+ * @title VendingMachine
+ * @dev A simple vending machine contract that allows users to purchase donuts using Ether.
+ */
 contract VendingMachine {
-    address payable public owner;
-    uint256 public donutPrice;
-    mapping (address  => uint256) public donutBalances;
+    address payable public owner;                // Address of the contract owner
+    uint256 public donutPrice;                   // Price of one donut in Wei
+    mapping (address  => uint256) public donutBalances; // Donut balances of users
 
+    /**
+     * @dev Constructor to initialize the contract with the initial donut price and an initial donut balance for the contract.
+     * @param _initialDonutPrice The initial price of a single donut in Wei.
+     */
     constructor(uint256 _initialDonutPrice) {
-        // set owner equal sender
-        owner = payable(msg.sender);
-        // Set the initial donut price
-        donutPrice = _initialDonutPrice;  
-        // address(this) means address of the contract
-        donutBalances[address(this)] = 100;
+        owner = payable(msg.sender);             // Set the contract owner
+        donutPrice = _initialDonutPrice;         // Set the initial donut price
+        donutBalances[address(this)] = 100;      // Set an initial donut balance for the contract
     }
 
-    // Update the donut price by the owner
+    /**
+     * @dev Allows the owner to update the donut price.
+     * @param newPrice The new price of a single donut in Wei.
+     */
     function updateDonutPrice(uint256 newPrice) public {
         require(msg.sender == owner, "Only the owner can update the donut price.");
         donutPrice = newPrice;
     }
 
-    function getVendingMachineBalance() public view  returns (uint256) {
-        // return the donut amount of smart contract address
+    /**
+     * @dev Retrieves the current donut balance of the vending machine.
+     * @return The donut balance of the vending machine contract.
+     */
+    function getVendingMachineBalance() public view returns (uint256) {
         return donutBalances[address(this)];
     }
 
+    /**
+     * @dev Allows the owner to restock the vending machine with more donuts.
+     * @param amount The amount of donuts to add to the vending machine's balance.
+     */
     function restock(uint256 amount) public {
-        // check the sender is owner
         require(msg.sender == owner, "Only the owner can restock this machine.");
-        // increment the donut amount of contract address
         donutBalances[address(this)] += amount;
     }
 
-    // payable is used to send any ether to the account
+    /**
+     * @dev Allows a user to purchase a specified amount of donuts using Ether.
+     * @param amount The amount of donuts to purchase.
+     */
     function purchase(uint256 amount) public payable {
         require(msg.value >= amount * donutPrice, "Insufficient balance");
-        require(donutBalances[address(this)] >= amount, "No enough donut in stock");
-         // decrement the donut amount of contract address
+        require(donutBalances[address(this)] >= amount, "Not enough donuts in stock");
         donutBalances[address(this)] -= amount;
-        // increment the donut amount of sender
         donutBalances[msg.sender] += amount;
-        // Send ether to the owner
-        owner.transfer(msg.value); 
+        payable(address(this)).transfer(msg.value);
     }
 
-    function myPurchase() public view returns(uint256) {
+    /**
+     * @dev Retrieves the donut balance of the caller.
+     * @return The donut balance of the caller.
+     */
+    function myPurchase() public view returns (uint256) {
         return donutBalances[msg.sender];
     }
 
+    /**
+     * @dev Retrieves the system ether balance.
+     */
+    function systemBalance() public view returns (uint256) {
+        require(msg.sender == owner, "Only the owner can withdraw Ether.");
+        return address(this).balance;
+    }
+
+    /**
+     * @dev Allows the owner to withdraw Ether from the contract.
+     * @param amount The amount of Ether to withdraw.
+     */
     function withdrawEther(uint256 amount) public {
-        require(msg.sender == owner, "Only owner can withdraw this.");
-        require(address(this).balance >= amount, "Not enough ether balance");
+        require(msg.sender == owner, "Only the owner can withdraw Ether.");
+        require(address(this).balance >= amount, "Not enough Ether balance");
         payable(owner).transfer(amount);
     }
 
+    /**
+     * @dev Retrieves the Ether balance of the contract owner.
+     * @return The Ether balance of the contract owner.
+     */
     function ownerEtherBalance() public view returns (uint256) {
-        require(msg.sender == owner, "Only owner can view this.");
+        require(msg.sender == owner, "Only the owner can view this.");
         return owner.balance;
     }
 
-    // Fallback function to receive ether
+    /**
+     * @dev Fallback function to receive Ether. Allows the contract to accept incoming Ether payments.
+     */
     receive() external payable {}
 }
